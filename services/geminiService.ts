@@ -7,7 +7,9 @@ import { TranslationResponse } from "../types";
  */
 export const translateAndAnalyzeQuery = async (query: string): Promise<TranslationResponse> => {
   try {
-    const response = await fetch("/.netlify/functions/translate", {
+    // Use relative path that works in both dev and production
+    const apiUrl = import.meta.env.DEV ? "http://localhost:3001/api/translate" : "/api/translate";
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

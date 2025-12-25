@@ -2,22 +2,25 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export default async (req, context) => {
+export default async (req, res) => {
+  // Enable CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { query } = await req.json();
+    const { query } = req.body;
 
     if (!query) {
-      return new Response(
-        JSON.stringify({ error: "Query is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return res.status(400).json({ error: "Query is required" });
     }
 
     const response = await ai.models.generateContent({
@@ -63,18 +66,11 @@ Query: "${query}"`,
     const text = response.text || "{}";
     const result = JSON.parse(text);
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Translation failed:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process the query. Please try again." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return res
+      .status(500)
+      .json({ error: "Failed to process the query. Please try again." });
   }
 };
