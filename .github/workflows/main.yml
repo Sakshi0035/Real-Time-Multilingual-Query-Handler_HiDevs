@@ -1,0 +1,20 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "main" ]  # Runs every time you push to main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4  # Pulls your code into the runner
+    
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: npm run build
