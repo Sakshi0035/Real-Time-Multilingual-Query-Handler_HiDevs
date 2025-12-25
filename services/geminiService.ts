@@ -7,8 +7,8 @@ import { TranslationResponse } from "../types";
  */
 export const translateAndAnalyzeQuery = async (query: string): Promise<TranslationResponse> => {
   try {
-    // Use relative path that works in both dev and production
-    const apiUrl = import.meta.env.DEV ? "http://localhost:3001/api/translate" : "/api/translate";
+    // Use your Vercel backend API
+    const apiUrl = `${import.meta.env.VITE_API_URL || "https://your-vercel-domain.vercel.app"}/api/translate`;
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
