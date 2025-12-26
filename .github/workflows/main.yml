@@ -2,14 +2,14 @@ name: Build & Deploy to Vercel
 
 on:
   push:
-    branches: [ "main" ]  # Runs every time you push to main
+    branches: [ "main" ]
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4  # Pulls your code into the runner
+    - uses: actions/checkout@v4
     
     - name: Install dependencies
       run: npm install
@@ -23,5 +23,4 @@ jobs:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        env: GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
