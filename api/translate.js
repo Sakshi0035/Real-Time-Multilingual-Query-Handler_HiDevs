@@ -19,6 +19,9 @@ export default async (req, res) => {
       return res.status(400).json({ error: "Query is required" });
     }
 
+    // Safe debug: log whether a Gemini key is present (do NOT log the key itself)
+    console.log('api/translate: GEMINI_API_KEY present?', !!process.env.GEMINI_API_KEY);
+
     // If GEMINI_API_KEY is set (from Vercel env or GitHub secrets), use it.
     // The key is stored securely server-side and never exposed to the browser.
     if (process.env.GEMINI_API_KEY) {
