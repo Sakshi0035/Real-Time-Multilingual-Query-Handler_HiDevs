@@ -46,12 +46,12 @@ const App: React.FC = () => {
   }, [inputText, isProcessing]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans text-zinc-200">
+    <div className="min-h-screen bg-white font-sans text-zinc-900">
       {/* Dynamic Background Ornament */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-64 bg-violet-600/10 blur-[120px] pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-64 bg-violet-600/5 blur-[120px] pointer-events-none -z-10"></div>
       
       {/* Header */}
-      <header className="bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50 sticky top-0 z-10">
+      <header className="bg-white/80 backdrop-blur-md border-b border-zinc-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-900/20">
@@ -60,12 +60,12 @@ const App: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white leading-none">GlobalSupport</h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Language Command Center</p>
+              <h1 className="text-xl font-bold tracking-tight text-zinc-900 leading-none">GlobalSupport</h1>
+                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Language Command Center</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>AI Engine Connected</span>
             </div>
@@ -79,12 +79,12 @@ const App: React.FC = () => {
           {/* Input Section */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
-              <div className="bg-zinc-900/40 backdrop-blur-sm rounded-3xl border border-zinc-800/50 p-8 shadow-2xl">
-                <h2 className="text-xl font-bold mb-2 flex items-center text-white">
+              <div className="bg-white/70 rounded-3xl border border-zinc-200 p-8 shadow-lg">
+                <h2 className="text-xl font-bold mb-2 flex items-center text-zinc-900">
                   <span className="w-2 h-6 bg-violet-500 rounded-full mr-3"></span>
                   Incoming Stream
                 </h2>
-                <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+                <p className="text-sm text-zinc-600 mb-8 leading-relaxed">
                   Route global communications through the translation core for real-time English synthesis.
                 </p>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -93,20 +93,20 @@ const App: React.FC = () => {
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder="Paste query text here..."
-                      className="w-full h-48 p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all resize-none text-zinc-100 placeholder-zinc-600 text-sm leading-relaxed"
+                      className="w-full h-48 p-5 rounded-2xl bg-zinc-50 border border-zinc-200 focus:ring-2 focus:ring-violet-200 focus:border-violet-200 transition-all resize-none text-zinc-900 placeholder-zinc-400 text-sm leading-relaxed"
                       disabled={isProcessing}
                     />
-                    <div className="absolute top-3 right-3 text-[10px] font-bold text-zinc-700 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">
+                    <div className="absolute top-3 right-3 text-[10px] font-bold text-zinc-700 bg-zinc-50 px-2 py-1 rounded-md border border-zinc-200">
                       RAW INPUT
                     </div>
                   </div>
                   <button
                     type="submit"
                     disabled={isProcessing || !inputText.trim()}
-                    className={`w-full py-4 px-6 rounded-2xl font-bold text-white transition-all flex items-center justify-center space-x-3 shadow-xl ${
+                    className={`w-full py-4 px-6 rounded-2xl font-bold text-white transition-all flex items-center justify-center space-x-3 shadow ${
                       isProcessing || !inputText.trim() 
-                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700' 
-                        : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:shadow-violet-900/20 active:transform active:scale-[0.98]'
+                        ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200' 
+                        : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:shadow-lg active:transform active:scale-[0.98]'
                     }`}
                   >
                     {isProcessing ? (

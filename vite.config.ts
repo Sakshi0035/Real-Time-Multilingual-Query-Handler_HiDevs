@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const repoBase = mode === 'production' ? '/Real-Time-Multilingual-Query-Handler_HiDevs/' : '/';
     return {
-      // Use root base for both dev and production (Vercel doesn't need a subpath)
-      base: '/',
+      // Use a repo-aware base in production so gh-pages serves correctly.
+      base: repoBase,
       server: {
         port: 3000,
         host: '0.0.0.0',

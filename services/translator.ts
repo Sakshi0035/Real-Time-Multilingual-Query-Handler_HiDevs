@@ -30,34 +30,31 @@ export const translateViaLibre = async (query: string): Promise<TranslationRespo
     console.warn('Backend call failed, using MyMemory fallback:', err);
   }
 
-  // Client-side MyMemory fallback if backend is unavailable. Sanitize noisy
-  // diagnostic responses (like messages mentioning 'langpair' or ALL-CAPS).
+  // Client-side LibreTranslate fallback if backend is unavailable.
+  // LibreTranslate provides a detect endpoint and a translate endpoint
+  // which tend to return reliable English translations for common phrases.
   try {
-    const encoded = encodeURIComponent(query);
-    const mm = await (await fetch(`https://api.mymemory.translated.net/get?q=${encoded}`)).json();
+    // Detect language first
+    const detectResp = await fetch('https://libretranslate.de/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query }),
+    });
+    const detectJson = await detectResp.json();
+    const detectedCode = Array.isArray(detectJson) && detectJson[0] && detectJson[0].language ? detectJson[0].language : null;
 
-    let translatedText = query;
-    if (mm && mm.responseData && mm.responseData.translatedText) {
-      translatedText = mm.responseData.translatedText;
-    }
-
-    const looksLikeError = (typeof translatedText === 'string') && (
-      translatedText.toLowerCase().includes('langpair') ||
-      translatedText.toLowerCase().includes('invalid source') ||
-      (translatedText.length > 40 && translatedText === translatedText.toUpperCase())
-    );
-
-    if (looksLikeError) {
-      if (mm && Array.isArray(mm.matches) && mm.matches.length > 0 && mm.matches[0].translation) {
-        translatedText = mm.matches[0].translation;
-      } else {
-        translatedText = query;
-      }
-    }
+    // Translate to English explicitly
+    const trResp = await fetch('https://libretranslate.de/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, source: detectedCode || 'auto', target: 'en', format: 'text' }),
+    });
+    const trJson = await trResp.json();
+    const translatedText = trJson && (trJson.translatedText || trJson.translated) ? (trJson.translatedText || trJson.translated) : query;
 
     return {
       translatedText,
-      detectedLanguage: (mm && mm.responseData && mm.responseData.lang) ? mm.responseData.lang : 'Unknown',
+      detectedLanguage: detectedCode && LANGUAGE_MAP[detectedCode] ? LANGUAGE_MAP[detectedCode] : (detectedCode || 'Unknown'),
       sentiment: 'neutral',
       suggestedResponse: '',
     };

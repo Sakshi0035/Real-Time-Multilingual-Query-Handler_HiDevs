@@ -75,43 +75,42 @@ export default async (req, res) => {
       }
     }
 
-    // Fallback: Use MyMemory public API (no API key required).
-    // Sanitize noisy or diagnostic responses (e.g. messages about 'langpair' or
-    // all-caps error text) and prefer a clean match when available.
-    const encoded = encodeURIComponent(query);
-    const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encoded}`);
-    const mmData = await mmRes.json();
+    // Fallback: Use LibreTranslate public instance for detection and translation.
+    try {
+      const detectResp = await fetch('https://libretranslate.de/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query }),
+      });
+      const detectJson = await detectResp.json();
+      const detectedCode = Array.isArray(detectJson) && detectJson[0] && detectJson[0].language ? detectJson[0].language : null;
 
-    let translatedText = query;
-    if (mmData && mmData.responseData && mmData.responseData.translatedText) {
-      translatedText = mmData.responseData.translatedText;
+      const trResp = await fetch('https://libretranslate.de/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query, source: detectedCode || 'auto', target: 'en', format: 'text' }),
+      });
+      const trJson = await trResp.json();
+      const translatedText = trJson && (trJson.translatedText || trJson.translated) ? (trJson.translatedText || trJson.translated) : query;
+
+      const LANGUAGE_MAP = { en: 'English', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese', ru: 'Russian', ja: 'Japanese', ko: 'Korean', zh: 'Chinese', ar: 'Arabic', hi: 'Hindi' };
+      const detectedLanguage = detectedCode && LANGUAGE_MAP[detectedCode] ? LANGUAGE_MAP[detectedCode] : (detectedCode || 'Unknown');
+
+      return res.status(200).json({
+        translatedText,
+        detectedLanguage,
+        sentiment: 'neutral',
+        suggestedResponse: '',
+      });
+    } catch (err) {
+      console.error('LibreTranslate fallback failed:', err);
+      return res.status(200).json({
+        translatedText: query,
+        detectedLanguage: 'Unknown',
+        sentiment: 'neutral',
+        suggestedResponse: '',
+      });
     }
-
-    // If the returned text looks like a diagnostic/error (contains 'langpair',
-    // 'invalid source', or is suspiciously ALL-CAPS), try the first match
-    // entry if present. Otherwise fall back to the original query.
-    const looksLikeError = (typeof translatedText === 'string') && (
-      translatedText.toLowerCase().includes('langpair') ||
-      translatedText.toLowerCase().includes('invalid source') ||
-      (translatedText.length > 40 && translatedText === translatedText.toUpperCase())
-    );
-
-    if (looksLikeError) {
-      if (mmData && Array.isArray(mmData.matches) && mmData.matches.length > 0 && mmData.matches[0].translation) {
-        translatedText = mmData.matches[0].translation;
-      } else {
-        translatedText = query;
-      }
-    }
-
-    const detectedLanguage = (mmData && mmData.responseData && mmData.responseData.lang) ? mmData.responseData.lang : 'Unknown';
-
-    return res.status(200).json({
-      translatedText,
-      detectedLanguage,
-      sentiment: 'neutral',
-      suggestedResponse: '',
-    });
   } catch (error) {
     console.error("Translation failed:", error);
     return res
