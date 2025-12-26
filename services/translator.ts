@@ -8,7 +8,8 @@ export const translateViaLibre = async (query: string): Promise<TranslationRespo
   try {
     // Call the backend endpoint which handles Gemini (if key is available)
     // and falls back to MyMemory if needed. This keeps API keys server-side.
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    // Use a blank default so production calls the same host (`/api/translate`).
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     const response = await fetch(`${apiUrl.replace(/\/$/, '')}/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -29,14 +30,34 @@ export const translateViaLibre = async (query: string): Promise<TranslationRespo
     console.warn('Backend call failed, using MyMemory fallback:', err);
   }
 
-  // Client-side MyMemory fallback if backend is unavailable
+  // Client-side MyMemory fallback if backend is unavailable. Sanitize noisy
+  // diagnostic responses (like messages mentioning 'langpair' or ALL-CAPS).
   try {
     const encoded = encodeURIComponent(query);
-    const mm = await (await fetch(`https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|en`)).json();
-    const translatedText = (mm && mm.responseData && mm.responseData.translatedText) ? mm.responseData.translatedText : query;
+    const mm = await (await fetch(`https://api.mymemory.translated.net/get?q=${encoded}`)).json();
+
+    let translatedText = query;
+    if (mm && mm.responseData && mm.responseData.translatedText) {
+      translatedText = mm.responseData.translatedText;
+    }
+
+    const looksLikeError = (typeof translatedText === 'string') && (
+      translatedText.toLowerCase().includes('langpair') ||
+      translatedText.toLowerCase().includes('invalid source') ||
+      (translatedText.length > 40 && translatedText === translatedText.toUpperCase())
+    );
+
+    if (looksLikeError) {
+      if (mm && Array.isArray(mm.matches) && mm.matches.length > 0 && mm.matches[0].translation) {
+        translatedText = mm.matches[0].translation;
+      } else {
+        translatedText = query;
+      }
+    }
+
     return {
       translatedText,
-      detectedLanguage: 'Unknown',
+      detectedLanguage: (mm && mm.responseData && mm.responseData.lang) ? mm.responseData.lang : 'Unknown',
       sentiment: 'neutral',
       suggestedResponse: '',
     };
