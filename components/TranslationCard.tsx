@@ -67,21 +67,23 @@ const TranslationCard: React.FC<TranslationCardProps> = ({ query }) => {
                 <p className="text-zinc-100 font-medium text-base leading-relaxed tracking-tight">{query.translatedText}</p>
               </div>
 
-              <div className="pt-2">
-                <h4 className="text-[10px] font-bold text-fuchsia-500 uppercase tracking-widest mb-3">AI Recommendation</h4>
-                <div className="bg-zinc-950/40 p-5 rounded-2xl border border-fuchsia-500/10 group-hover:border-fuchsia-500/20 transition-all duration-300">
-                  <p className="text-zinc-300 text-sm leading-relaxed">{query.suggestedResponse}</p>
-                  <button 
-                    onClick={() => navigator.clipboard.writeText(query.suggestedResponse)}
-                    className="mt-4 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 transition-all flex items-center uppercase tracking-widest"
-                  >
-                    <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    Copy Response Buffer
-                  </button>
+              {query.suggestedResponse ? (
+                <div className="pt-2">
+                  <h4 className="text-[10px] font-bold text-fuchsia-500 uppercase tracking-widest mb-3">AI Recommendation</h4>
+                  <div className="bg-zinc-950/40 p-5 rounded-2xl border border-fuchsia-500/10 group-hover:border-fuchsia-500/20 transition-all duration-300">
+                    <p className="text-zinc-300 text-sm leading-relaxed">{query.suggestedResponse}</p>
+                    <button 
+                      onClick={() => navigator.clipboard.writeText(query.suggestedResponse)}
+                      className="mt-4 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 transition-all flex items-center uppercase tracking-widest"
+                    >
+                      <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copy Response Buffer
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           )}
         </div>

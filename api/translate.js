@@ -18,18 +18,20 @@ export default async (req, res) => {
     if (!query) {
       return res.status(400).json({ error: "Query is required" });
     }
-    // If GEMINI_API_KEY is set, use Google GenAI as before.
+
+    // If GEMINI_API_KEY is set (from Vercel env or GitHub secrets), use it.
+    // The key is stored securely server-side and never exposed to the browser.
     if (process.env.GEMINI_API_KEY) {
       try {
         const { GoogleGenAI, Type } = require("@google/genai");
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: `Translate the following customer support query into English and provide a professional suggested response. \n\nQuery: "${query}"`,
+          model: "gemini-2.0-flash",
+          contents: `Translate this customer query into English and return a JSON object with: translatedText, detectedLanguage (friendly name), sentiment (positive/neutral/negative), and suggestedResponse (empty string). Query: "${query}"`,
           config: {
             systemInstruction:
-              "You are a professional multilingual support agent. Your task is to detect the input language, translate it accurately to English, analyze the sentiment, and draft a helpful, concise English response. Return ONLY valid JSON.",
+              "You are a professional multilingual translator. Detect the input language, translate to English, analyze sentiment, and return ONLY valid JSON with keys: translatedText, detectedLanguage, sentiment, suggestedResponse.",
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
@@ -49,7 +51,7 @@ export default async (req, res) => {
                 },
                 suggestedResponse: {
                   type: Type.STRING,
-                  description: "A professional response in English.",
+                  description: "Empty string (no AI recommendations).",
                 },
               },
               required: [
@@ -66,66 +68,22 @@ export default async (req, res) => {
         const result = JSON.parse(text);
         return res.status(200).json(result);
       } catch (err) {
-        console.error("GenAI path failed, falling back to libretranslate:", err);
+        console.error("Gemini path failed, falling back to MyMemory:", err);
       }
     }
 
-    // Fallback path: use LibreTranslate public instance (no API key required).
-    // This provides translation and language detection without any secret.
-    const libreBase = "https://libretranslate.de";
-
-    // Detect language
-    const detectRes = await fetch(`${libreBase}/detect`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query }),
-    });
-    let detectedLanguage = "unknown";
-    try {
-      const detects = await detectRes.json();
-      if (Array.isArray(detects) && detects[0] && detects[0].language) {
-        detectedLanguage = detects[0].language;
-      }
-    } catch (err) {
-      console.warn("Language detection failed:", err);
-    }
-
-    // Map common ISO codes to friendly names
-    const languageMap = {
-      en: 'English', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese', ru: 'Russian', ja: 'Japanese', ko: 'Korean', zh: 'Chinese', ar: 'Arabic', hi: 'Hindi'
-    };
-    const detectedLanguageName = languageMap[detectedLanguage] || detectedLanguage || 'Unknown';
-
-    // Translate to English
-    const translateRes = await fetch(`${libreBase}/translate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, source: detectedLanguage || "auto", target: "en", format: "text" }),
-    });
-
-    const translateJson = await translateRes.json();
-    const translatedText = translateJson.translatedText || query;
-
-    // Simple rule-based sentiment analysis (best-effort)
-    const pos = ["thank", "great", "awesome", "good", "happy", "love", "excellent", "thanks"];
-    const neg = ["problem", "not", "no", "can't", "cannot", "bad", "error", "issue", "angry", "frustrat"];
-    const lc = translatedText.toLowerCase();
-    let score = 0;
-    pos.forEach((w) => { if (lc.includes(w)) score += 1; });
-    neg.forEach((w) => { if (lc.includes(w)) score -= 1; });
-    const sentiment = score > 0 ? "positive" : score < 0 ? "negative" : "neutral";
-
-    // Simple suggested response template
-    let suggestedResponse = `Thank you for reaching out. Regarding: "${translatedText}" — we'll review your message and follow up shortly.`;
-    if (sentiment === "negative") {
-      suggestedResponse = `We're sorry you're experiencing an issue. Regarding: "${translatedText}" — could you please provide additional details so we can help resolve this?`;
-    }
-
+    // Fallback: Use MyMemory public API (no API key required).
+    // This is reliable and works without secrets.
+    const encoded = encodeURIComponent(query);
+    const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|en`);
+    const mmData = await mmRes.json();
+    const translatedText = (mmData && mmData.responseData && mmData.responseData.translatedText) ? mmData.responseData.translatedText : query;
+    
     return res.status(200).json({
       translatedText,
-      detectedLanguage: detectedLanguageName,
-      sentiment,
-      suggestedResponse,
+      detectedLanguage: 'Unknown',
+      sentiment: 'neutral',
+      suggestedResponse: '',
     });
   } catch (error) {
     console.error("Translation failed:", error);

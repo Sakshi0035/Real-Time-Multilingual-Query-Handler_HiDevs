@@ -6,53 +6,39 @@ const LANGUAGE_MAP: Record<string, string> = {
 
 export const translateViaLibre = async (query: string): Promise<TranslationResponse> => {
   try {
-    const libreBase = 'https://libretranslate.de';
-
-    const detectRes = await fetch(`${libreBase}/detect`, {
+    // Call the backend endpoint which handles Gemini (if key is available)
+    // and falls back to MyMemory if needed. This keeps API keys server-side.
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl.replace(/\/$/, '')}/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query })
+      body: JSON.stringify({ query }),
     });
 
-    let detectedCode = 'auto';
-    try {
-      const detects = await detectRes.json();
-      if (Array.isArray(detects) && detects[0] && detects[0].language) {
-        detectedCode = detects[0].language;
-      }
-    } catch (err) {
-      console.warn('Client language detection failed:', err);
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        translatedText: data.translatedText || query,
+        detectedLanguage: data.detectedLanguage || 'Unknown',
+        sentiment: (data.sentiment as 'positive' | 'neutral' | 'negative') || 'neutral',
+        suggestedResponse: data.suggestedResponse || '',
+      };
     }
+    console.warn('Backend response not OK:', response.status);
+  } catch (err) {
+    console.warn('Backend call failed, using MyMemory fallback:', err);
+  }
 
-    const translateRes = await fetch(`${libreBase}/translate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, source: detectedCode || 'auto', target: 'en', format: 'text' }),
-    });
-
-    const translateJson = await translateRes.json();
-    const translatedText = translateJson.translatedText || query;
-
-    const lc = translatedText.toLowerCase();
-    const pos = ["thank", "great", "awesome", "good", "happy", "love", "excellent", "thanks"];
-    const neg = ["problem", "not", "no", "can't", "cannot", "bad", "error", "issue", "angry", "frustrat"];
-    let score = 0;
-    pos.forEach((w) => { if (lc.includes(w)) score += 1; });
-    neg.forEach((w) => { if (lc.includes(w)) score -= 1; });
-    const sentiment = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
-
-    const detectedLanguage = LANGUAGE_MAP[detectedCode] || detectedCode || 'Unknown';
-
-    let suggestedResponse = `Thank you for reaching out. Regarding: "${translatedText}" — we'll review your message and follow up shortly.`;
-    if (sentiment === 'negative') {
-      suggestedResponse = `We're sorry you're experiencing an issue. Regarding: "${translatedText}" — could you please provide additional details so we can help resolve this?`;
-    }
-
+  // Client-side MyMemory fallback if backend is unavailable
+  try {
+    const encoded = encodeURIComponent(query);
+    const mm = await (await fetch(`https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|en`)).json();
+    const translatedText = (mm && mm.responseData && mm.responseData.translatedText) ? mm.responseData.translatedText : query;
     return {
       translatedText,
-      detectedLanguage,
-      sentiment: sentiment as 'positive' | 'neutral' | 'negative',
-      suggestedResponse,
+      detectedLanguage: 'Unknown',
+      sentiment: 'neutral',
+      suggestedResponse: '',
     };
   } catch (err) {
     console.error('translateViaLibre error:', err);
@@ -60,75 +46,10 @@ export const translateViaLibre = async (query: string): Promise<TranslationRespo
       translatedText: query,
       detectedLanguage: 'Unknown',
       sentiment: 'neutral',
-      suggestedResponse: `Thanks for your message: "${query}"`,
+      suggestedResponse: '',
     };
   }
 };
 
 export default translateViaLibre;
-import { TranslationResponse } from "../types";
 
-const LIBRE_BASE = "https://libretranslate.de";
-
-const languageMap: Record<string, string> = {
-  en: 'English', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese', ru: 'Russian', ja: 'Japanese', ko: 'Korean', zh: 'Chinese', ar: 'Arabic', hi: 'Hindi'
-};
-
-export const translateAndAnalyzeQuery = async (query: string): Promise<TranslationResponse> => {
-  try {
-    // Detect language
-    const detectRes = await fetch(`${LIBRE_BASE}/detect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query })
-    });
-
-    let detectedCode = 'auto';
-    try {
-      const detects = await detectRes.json();
-      if (Array.isArray(detects) && detects[0] && detects[0].language) {
-        detectedCode = detects[0].language;
-      }
-    } catch (err) {
-      console.warn('Client detection failed, defaulting to auto', err);
-    }
-
-    // Translate to English
-    const translateRes = await fetch(`${LIBRE_BASE}/translate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, source: detectedCode || 'auto', target: 'en', format: 'text' })
-    });
-
-    const translateJson = await translateRes.json();
-    const translatedText = translateJson.translatedText || query;
-
-    // Basic sentiment
-    const pos = ["thank", "great", "awesome", "good", "happy", "love", "excellent", "thanks"];
-    const neg = ["problem", "not", "no", "can't", "cannot", "bad", "error", "issue", "angry", "frustrat"];
-    const lc = translatedText.toLowerCase();
-    let score = 0;
-    pos.forEach((w) => { if (lc.includes(w)) score += 1; });
-    neg.forEach((w) => { if (lc.includes(w)) score -= 1; });
-    const sentiment = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
-
-    const detectedLanguage = languageMap[detectedCode] || detectedCode || 'Unknown';
-
-    let suggestedResponse = `Thank you for reaching out. Regarding: "${translatedText}" — we'll review your message and follow up shortly.`;
-    if (sentiment === 'negative') {
-      suggestedResponse = `We're sorry you're experiencing an issue. Regarding: "${translatedText}" — could you please provide additional details so we can help resolve this?`;
-    }
-
-    return {
-      translatedText,
-      detectedLanguage,
-      sentiment: sentiment as TranslationResponse['sentiment'],
-      suggestedResponse,
-    } as TranslationResponse;
-  } catch (err) {
-    console.error('Client translation failed:', err);
-    throw new Error('Client-side translation failed');
-  }
-};
-
-export default translateAndAnalyzeQuery;
