@@ -5,8 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      // Base path for GitHub Pages (repo name)
-      base: '/Real-Time-Multilingual-Query-Handler_HiDevs/',
+      // Use root base during development for local dev server, keep repo base for production
+      base: mode === 'development' ? '/' : '/Real-Time-Multilingual-Query-Handler_HiDevs/',
       server: {
         port: 3000,
         host: '0.0.0.0',
