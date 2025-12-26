@@ -76,15 +76,39 @@ export default async (req, res) => {
     }
 
     // Fallback: Use MyMemory public API (no API key required).
-    // This is reliable and works without secrets.
+    // Sanitize noisy or diagnostic responses (e.g. messages about 'langpair' or
+    // all-caps error text) and prefer a clean match when available.
     const encoded = encodeURIComponent(query);
-    const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|en`);
+    const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encoded}`);
     const mmData = await mmRes.json();
-    const translatedText = (mmData && mmData.responseData && mmData.responseData.translatedText) ? mmData.responseData.translatedText : query;
-    
+
+    let translatedText = query;
+    if (mmData && mmData.responseData && mmData.responseData.translatedText) {
+      translatedText = mmData.responseData.translatedText;
+    }
+
+    // If the returned text looks like a diagnostic/error (contains 'langpair',
+    // 'invalid source', or is suspiciously ALL-CAPS), try the first match
+    // entry if present. Otherwise fall back to the original query.
+    const looksLikeError = (typeof translatedText === 'string') && (
+      translatedText.toLowerCase().includes('langpair') ||
+      translatedText.toLowerCase().includes('invalid source') ||
+      (translatedText.length > 40 && translatedText === translatedText.toUpperCase())
+    );
+
+    if (looksLikeError) {
+      if (mmData && Array.isArray(mmData.matches) && mmData.matches.length > 0 && mmData.matches[0].translation) {
+        translatedText = mmData.matches[0].translation;
+      } else {
+        translatedText = query;
+      }
+    }
+
+    const detectedLanguage = (mmData && mmData.responseData && mmData.responseData.lang) ? mmData.responseData.lang : 'Unknown';
+
     return res.status(200).json({
       translatedText,
-      detectedLanguage: 'Unknown',
+      detectedLanguage,
       sentiment: 'neutral',
       suggestedResponse: '',
     });
