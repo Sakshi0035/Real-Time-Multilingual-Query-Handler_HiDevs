@@ -1,6 +1,6 @@
 
-{
-  "name": "GlobalSupport AI Translator",
-  "description": "A high-performance command center for real-time multilingual customer support translation and analysis.",
+  "name": "GlobalSupport AI Translator (Standalone)",
+  "description": "A high-performance command center for real-time multilingual support translation. Now featuring Edge Simulation for instant offline use without API keys.",
+  "requestFramePermissions": []
   "requestFramePermissions": []
 }

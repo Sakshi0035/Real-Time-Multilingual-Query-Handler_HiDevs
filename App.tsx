@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { QueryTranslation } from './types';
 import { translateAndAnalyzeQuery } from './services/geminiService';
 import TranslationCard from './components/TranslationCard';
@@ -151,13 +151,13 @@ const App: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Logs</span>
                 <span className="bg-zinc-900 text-violet-400 border border-violet-500/20 px-2 py-0.5 rounded text-xs font-bold">
-                  {queries.length}
+                  {queries.length + (liveQuery ? 1 : 0)}
                 </span>
               </div>
             </div>
 
             <div className="space-y-6">
-              {queries.length === 0 ? (
+              {(!liveQuery && queries.length === 0) ? (
                 <div className="bg-zinc-900/20 rounded-3xl border-2 border-dashed border-zinc-800/50 p-16 text-center">
                   <div className="mx-auto w-20 h-20 bg-zinc-900/50 rounded-full flex items-center justify-center mb-6 border border-zinc-800">
                     <svg className="w-10 h-10 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,9 +168,12 @@ const App: React.FC = () => {
                   <p className="text-zinc-600 text-sm mt-2 max-w-xs mx-auto">Awaiting incoming language signals for real-time English mapping.</p>
                 </div>
               ) : (
-                queries.map((q) => (
-                  <TranslationCard key={q.id} query={q} />
-                ))
+                <>
+                  {liveQuery && <TranslationCard key={liveQuery.id} query={liveQuery} />}
+                  {queries.map((q) => (
+                    <TranslationCard key={q.id} query={q} />
+                  ))}
+                </>
               )}
             </div>
           </div>
